@@ -1,5 +1,7 @@
 // hiding.c
 // steganography: hiding/finding a BMP (picture) file in a WAV (audio) file
+// USAGE: PROGRAM <audio_in_path> <audio_out_path> <pic_path> <"r"/"w" pic>
+// 	  "r" reads picture from audio; "w" writes picture to audio
 // Bugakov G., 2014
 
 #include <stdio.h>
@@ -92,50 +94,66 @@ printf("sizes: %i! %i! %i! %i!\n", BMPheader.fileSize, BMPheader.thisHeaderSize,
 printf("signature: %i!\n", BMPheader.signature);
 }
 
+void audio_io() {
+
+}
+
+FILE *audio_in, *audio_out, *picture;
+char *audioData, *picData;
+short mode=1;
+
 int main (int argc, char *argv[])
 {
-FILE *audio_file, *output_file, *picture;
-char *audioData, *picData;
-
-if (argc < 3) {
-	errx(EXIT_FAILURE,"USAGE: %s <audio_file_path> <output_file_path> <pic_path>", argv[0]); //add argv[4]=mode (hide/find)
+//checking if input is correct
+if (argc < 5) {
+	errx(EXIT_FAILURE,"USAGE: %s <audio_in_path> <audio_out_path> <pic_path> <\"r\"/\"w\" pic>",argv[0]);	
 }
-if ((audio_file = fopen (argv[1],"r")) == NULL) {
+
+if (argv[4][0] == 'r') mode = 0;
+else if (argv[4][0] == 'w') mode = 1;
+else errx(EXIT_FAILURE,"Wrong mode\n\"r\" reads picture from audio; \"w\" writes picture to audio");
+
+if ((audio_in = fopen (argv[1],"r")) == NULL) {
 	errx(EXIT_FAILURE,"Input file cannot be opened");
 }
-if ((output_file = fopen (argv[2],"w")) == NULL) {
+if ((audio_out = fopen (argv[2],"w")) == NULL) {
 	errx(EXIT_FAILURE,"Output file cannot be opened");
 }
-if ((picture = fopen (argv[3],"r")) == NULL) {
+
+if (mode && ((picture = fopen (argv[3],"r")) == NULL)) {
 	errx(EXIT_FAILURE,"Pic file cannot be opened");
 }
-if (fread(&WAVheader, sizeof(WAVheader), 1, audio_file)<1) {
+if (!mode && ((picture = fopen (argv[3],"w")) == NULL)) {
+	errx(EXIT_FAILURE,"Pic file cannot be opened");
+}
+
+if (fread(&WAVheader, sizeof(WAVheader), 1, audio_in)<1) {
 	errx(EXIT_FAILURE,"Audio could not be read");
 }
-if (fread(&BMPheader, sizeof(BMPheader), 1, picture)<1) {
+if (mode && (fread(&BMPheader, sizeof(BMPheader), 1, picture)<1)) {
 	errx(EXIT_FAILURE,"Pic could not be read");
 }
 
 info_audio();
 audioData = (char*) malloc(WAVheader.subchunk2Size);
-fread(audioData, WAVheader.subchunk2Size, 1, audio_file);
-fwrite(&WAVheader, sizeof(WAVheader), 1, output_file);
-fwrite(audioData, WAVheader.subchunk2Size, 1, output_file);
+fread(audioData, WAVheader.subchunk2Size, 1, audio_in);
+fwrite(&WAVheader, sizeof(WAVheader), 1, audio_out);
+fwrite(audioData, WAVheader.subchunk2Size, 1, audio_out);
 free(audioData);
-fclose(audio_file);
+fclose(audio_in);
 printf("audio written\n");
 
 info_pic();
 picData = (char*) malloc(BMPheader.dataSize);
 fread(picData, BMPheader.dataSize, 1, picture);
-fwrite(&BMPheader, sizeof(BMPheader), 1, output_file);
-fwrite(picData, BMPheader.dataSize, 1, output_file);
+fwrite(&BMPheader, sizeof(BMPheader), 1, audio_out);
+fwrite(picData, BMPheader.dataSize, 1, audio_out);
 free(picData);
 fclose(picture);
 printf("picture written\n");
 
-fclose(output_file);
-printf("finished. press any key to exit");
+fclose(audio_out);
+printf("finished. press a key to exit");
 getchar();
 return 0;
 }
