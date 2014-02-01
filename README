@@ -1,3 +1,6 @@
-Hiding.c
-Steganography: hiding/finding a BMP (picture) file in a WAV (audio) file
+hiding.c
+Steganography: hiding/finding a BMP (picture) file in a WAV (audio) file.
+v1: picture is written to the end of audio, while audio.header.size stays the same
+USAGE: PROGRAM <audio_in_path> <audio_out_path> <pic_path> <"r"/"w" pic>
+	"r" reads picture from audio; "w" writes picture to audio
 Bugakov G., 2014
